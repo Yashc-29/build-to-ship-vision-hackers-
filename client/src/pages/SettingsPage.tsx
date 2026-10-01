@@ -21,16 +21,13 @@ import { useLanguageStore } from '../stores/languageStore';
 import { useAudioStore } from '../stores/audioStore';
 import { SUPPORTED_LANGUAGES, LanguageCode } from '../types';
 
-const MURF_VOICE_OPTIONS = [
-  { id: 'en-US-natalie', name: 'Natalie', lang: 'English (US)', gender: 'Female', badge: 'Conversational' },
-  { id: 'en-US-marcus', name: 'Marcus', lang: 'English (US)', gender: 'Male', badge: 'Professional' },
-  { id: 'hi-IN-kabir', name: 'Kabir', lang: 'Hindi (IN)', gender: 'Male', badge: 'Warm & Natural' },
-  { id: 'hi-IN-ananya', name: 'Ananya', lang: 'Hindi (IN)', gender: 'Female', badge: 'Expressive' },
-  { id: 'en-IN-eashwar', name: 'Eashwar', lang: 'Hinglish / Indian', gender: 'Male', badge: 'Indian Dialect' },
-  { id: 'es-ES-enrique', name: 'Enrique', lang: 'Spanish', gender: 'Male', badge: 'Articulate' },
-  { id: 'fr-FR-adrien', name: 'Adrien', lang: 'French', gender: 'Male', badge: 'European' },
-  { id: 'de-DE-sebastian', name: 'Sebastian', lang: 'German', gender: 'Male', badge: 'Calm & Direct' },
-  { id: 'ar-AE-zayd', name: 'Zayd', lang: 'Arabic', gender: 'Male', badge: 'Standard' }
+const SARVAM_SPEAKER_OPTIONS = [
+  { id: 'meera', name: 'Meera', lang: 'Hindi / English (IN)', gender: 'Female', badge: 'Warm & Natural' },
+  { id: 'arvind', name: 'Arvind', lang: 'Hindi / English (IN)', gender: 'Male', badge: 'Professional' },
+  { id: 'pavithra', name: 'Pavithra', lang: 'Tamil / Telugu / Bengali', gender: 'Female', badge: 'South & East Dialects' },
+  { id: 'maitreyi', name: 'Maitreyi', lang: 'Kannada / Malayalam', gender: 'Female', badge: 'Expressive' },
+  { id: 'amol', name: 'Amol', lang: 'Marathi / Gujarati', gender: 'Male', badge: 'Regional Clear' },
+  { id: 'amartya', name: 'Amartya', lang: 'Punjabi / Odia', gender: 'Male', badge: 'Articulate' }
 ];
 
 export const SettingsPage: React.FC = () => {
@@ -41,8 +38,8 @@ export const SettingsPage: React.FC = () => {
     toggleTts,
     ttsEngine,
     setTtsEngine,
-    selectedMurfVoice,
-    setSelectedMurfVoice,
+    selectedSarvamSpeaker,
+    setSelectedSarvamSpeaker,
     speak,
     stopSpeaking,
     isSpeaking
@@ -52,10 +49,9 @@ export const SettingsPage: React.FC = () => {
   const [apiKeyOverride, setApiKeyOverride] = useState(
     localStorage.getItem('nebula_gemini_key') || ''
   );
-  const [murfKeyOverride, setMurfKeyOverride] = useState(
-    localStorage.getItem('nebula_murf_key') || ''
+  const [sarvamKeyOverride, setSarvamKeyOverride] = useState(
+    localStorage.getItem('nebula_sarvam_key') || localStorage.getItem('nebula_murf_key') || ''
   );
-  const [speechRate, setSpeechRate] = useState('1.0');
 
   const handleLanguageChange = (code: LanguageCode) => {
     setLanguage(code);
@@ -70,10 +66,10 @@ export const SettingsPage: React.FC = () => {
       localStorage.removeItem('nebula_gemini_key');
     }
 
-    if (murfKeyOverride.trim()) {
-      localStorage.setItem('nebula_murf_key', murfKeyOverride.trim());
+    if (sarvamKeyOverride.trim()) {
+      localStorage.setItem('nebula_sarvam_key', sarvamKeyOverride.trim());
     } else {
-      localStorage.removeItem('nebula_murf_key');
+      localStorage.removeItem('nebula_sarvam_key');
     }
 
     triggerNotice();
@@ -91,13 +87,13 @@ export const SettingsPage: React.FC = () => {
     }
 
     const testPhrases: Record<string, string> = {
-      en: 'Hello! This is Nebula Voice powered by Murf AI studio neural speech synthesis.',
-      hi: 'नमस्ते! नेबुला वॉयस मर्फ एआई स्टूडियो स्पीच सिंथेसिस द्वारा संचालित है।',
-      hinglish: 'Hello! Nebula Voice Murf AI neural voice ke sath bilkul tayyar hai.',
-      es: 'Hola, este es Nebula Voice con síntesis de voz neuronal de Murf AI.',
-      fr: 'Bonjour, ceci est Nebula Voice avec la synthèse vocale Murf AI.',
-      de: 'Hallo, dies ist Nebula Voice mit Murf AI neuronaler Sprachsynthese.',
-      ar: 'مرحبا! هذا هو نيبولا فويس مدعومًا بتقنية مورف للذكاء الاصطناعي.'
+      en: 'Hello! This is Nebula Voice powered by Sarvam AI neural speech synthesis.',
+      hi: 'नमस्ते! नेबुला वॉयस सरवम एआई न्यूरल स्पीच सिंथेसिस द्वारा संचालित है।',
+      hinglish: 'Hello! Nebula Voice Sarvam AI neural voice ke sath bilkul tayyar hai.',
+      es: 'Hola, este es Nebula Voice con síntesis de voz neuronal de Sarvam AI.',
+      fr: 'Bonjour, ceci est Nebula Voice avec la synthèse vocale Sarvam AI.',
+      de: 'Hallo, dies ist Nebula Voice mit Sarvam AI Sprachsynthese.',
+      ar: 'مرحبا! هذا هو نيبولا فويس مدعومًا بتقنية سروم للذكاء الاصطناعي.'
     };
 
     const text = testPhrases[currentLanguage] || testPhrases.en;
@@ -115,7 +111,7 @@ export const SettingsPage: React.FC = () => {
           <span>Platform & Speech Settings</span>
         </h1>
         <p className="text-xs text-slate-400 mt-1">
-          Configure Murf AI studio voice synthesis, dialect defaults, and console preferences
+          Configure Sarvam AI studio voice synthesis, dialect defaults, and console preferences
         </p>
       </div>
 
@@ -126,7 +122,7 @@ export const SettingsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Murf AI Studio Voice Synthesis Engine */}
+      {/* Sarvam AI Studio Voice Synthesis Engine */}
       <div className="nebula-panel rounded-3xl p-6 border border-white/10 shadow-xl space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -136,14 +132,14 @@ export const SettingsPage: React.FC = () => {
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-sm font-bold text-white font-display">
-                  Murf AI Neural Speech Synthesis
+                  Sarvam AI Neural Speech Synthesis
                 </h3>
                 <span className="px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-[10px] font-mono font-bold">
-                  Falcon 2 & Gen2
+                  Bulbul:v1 Model
                 </span>
               </div>
               <p className="text-xs text-slate-400">
-                Ultra-realistic, studio-grade voices with automatic browser fallback
+                Ultra-realistic Indic neural voice synthesis with automatic browser fallback
               </p>
             </div>
           </div>
@@ -153,16 +149,16 @@ export const SettingsPage: React.FC = () => {
             <button
               type="button"
               onClick={() => {
-                setTtsEngine('murf');
+                setTtsEngine('sarvam');
                 triggerNotice();
               }}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                ttsEngine === 'murf'
+                ttsEngine === 'sarvam'
                   ? 'bg-gradient-to-r from-indigo-600 to-cyan-500 text-white shadow-sm'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              Murf AI Studio
+              Sarvam AI
             </button>
             <button
               type="button"
@@ -181,21 +177,21 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Murf Voice Selection Grid */}
-        {ttsEngine === 'murf' && (
+        {/* Sarvam Speaker Selection Grid */}
+        {ttsEngine === 'sarvam' && (
           <div className="space-y-3 pt-1 animate-in fade-in">
             <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-              Select Murf AI Voice Actor
+              Select Sarvam AI Speaker
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
-              {MURF_VOICE_OPTIONS.map((v) => {
-                const isSelected = selectedMurfVoice === v.id;
+              {SARVAM_SPEAKER_OPTIONS.map((v) => {
+                const isSelected = selectedSarvamSpeaker === v.id;
                 return (
                   <button
                     key={v.id}
                     type="button"
                     onClick={() => {
-                      setSelectedMurfVoice(v.id);
+                      setSelectedSarvamSpeaker(v.id);
                       triggerNotice();
                     }}
                     className={`p-3 rounded-2xl border text-left transition-all relative ${
@@ -243,7 +239,7 @@ export const SettingsPage: React.FC = () => {
                 {isTtsEnabled ? 'Voice Auto-Play Enabled' : 'Voice Output Muted'}
               </div>
               <div className="text-[11px] text-slate-400">
-                Engine: <span className="text-cyan-300 font-semibold">{ttsEngine === 'murf' ? `Murf AI (${selectedMurfVoice})` : 'Browser Native'}</span>
+                Engine: <span className="text-cyan-300 font-semibold">{ttsEngine === 'sarvam' ? `Sarvam AI (${selectedSarvamSpeaker})` : 'Browser Native'}</span>
               </div>
             </div>
           </div>
@@ -299,7 +295,7 @@ export const SettingsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* API Keys Configuration (Murf AI & Gemini) */}
+      {/* API Keys Configuration (Sarvam AI & Gemini) */}
       <div className="nebula-panel rounded-3xl p-6 border border-white/10 shadow-xl space-y-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
@@ -310,7 +306,7 @@ export const SettingsPage: React.FC = () => {
               AI Service API Credentials
             </h3>
             <p className="text-xs text-slate-400">
-              Configure Murf AI Studio API key and Google Gemini API key overrides
+              Configure Sarvam AI API key and Google Gemini API key overrides
             </p>
           </div>
         </div>
@@ -318,13 +314,13 @@ export const SettingsPage: React.FC = () => {
         <div className="space-y-3 pt-2">
           <div>
             <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-              Murf AI API Key
+              Sarvam AI API Key
             </label>
             <input
               type="password"
-              placeholder="Paste Murf AI API key (from https://murf.ai/api)"
-              value={murfKeyOverride}
-              onChange={(e) => setMurfKeyOverride(e.target.value)}
+              placeholder="Paste Sarvam AI API key (from https://sarvam.ai)"
+              value={sarvamKeyOverride}
+              onChange={(e) => setSarvamKeyOverride(e.target.value)}
               className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-cyan-400"
             />
           </div>

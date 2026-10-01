@@ -2,23 +2,29 @@ import { create } from 'zustand';
 import { LanguageCode, SUPPORTED_LANGUAGES } from '../types';
 import { api } from '../lib/api';
 
-export type TtsEngine = 'murf' | 'browser';
+export type TtsEngine = 'sarvam' | 'browser';
 
 interface AudioState {
   isTtsEnabled: boolean;
   isSpeaking: boolean;
   ttsEngine: TtsEngine;
-  selectedMurfVoice: string;
-  isMurfConfigured: boolean;
+  selectedSarvamSpeaker: string;
+  isSarvamConfigured: boolean;
   currentlySpeakingId: string | null;
 
   toggleTts: () => void;
   setTtsEnabled: (enabled: boolean) => void;
   setTtsEngine: (engine: TtsEngine) => void;
-  setSelectedMurfVoice: (voiceId: string) => void;
-  checkMurfStatus: () => Promise<void>;
+  setSelectedSarvamSpeaker: (speakerId: string) => void;
+  checkSarvamStatus: () => Promise<void>;
   speak: (text: string, langCode?: LanguageCode, messageId?: string) => Promise<void>;
   stopSpeaking: () => void;
+
+  // Backward compatibility aliases
+  selectedMurfVoice?: string;
+  isMurfConfigured?: boolean;
+  setSelectedMurfVoice?: (voiceId: string) => void;
+  checkMurfStatus?: () => Promise<void>;
 }
 
 let activeAudioEl: HTMLAudioElement | null = null;
@@ -37,9 +43,9 @@ if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
 export const useAudioStore = create<AudioState>((set, get) => ({
   isTtsEnabled: localStorage.getItem('nebula_tts') !== 'false',
   isSpeaking: false,
-  ttsEngine: (localStorage.getItem('nebula_tts_engine') as TtsEngine) || 'murf',
-  selectedMurfVoice: localStorage.getItem('nebula_murf_voice') || 'en-US-natalie',
-  isMurfConfigured: false,
+  ttsEngine: (localStorage.getItem('nebula_tts_engine') as TtsEngine) === 'browser' ? 'browser' : 'sarvam',
+  selectedSarvamSpeaker: localStorage.getItem('nebula_sarvam_speaker') || 'meera',
+  isSarvamConfigured: false,
   currentlySpeakingId: null,
 
   toggleTts: () => {
@@ -64,24 +70,39 @@ export const useAudioStore = create<AudioState>((set, get) => ({
     set({ ttsEngine: engine });
   },
 
-  setSelectedMurfVoice: (voiceId: string) => {
-    localStorage.setItem('nebula_murf_voice', voiceId);
-    set({ selectedMurfVoice: voiceId });
+  setSelectedSarvamSpeaker: (speakerId: string) => {
+    localStorage.setItem('nebula_sarvam_speaker', speakerId);
+    set({ selectedSarvamSpeaker: speakerId });
   },
 
-  checkMurfStatus: async () => {
+  checkSarvamStatus: async () => {
     try {
       const res = await api.tts.getVoices();
-      set({ isMurfConfigured: res.murf_configured });
-      if (res.murf_configured) {
+      const isConfigured = Boolean(res.sarvam_configured || res.murf_configured);
+      set({ isSarvamConfigured: isConfigured });
+      if (isConfigured) {
         const stored = localStorage.getItem('nebula_tts_engine');
-        if (!stored || stored === 'murf') {
-          set({ ttsEngine: 'murf' });
+        if (!stored || stored === 'sarvam' || stored === 'murf') {
+          set({ ttsEngine: 'sarvam' });
         }
       }
     } catch {
-      set({ isMurfConfigured: false });
+      set({ isSarvamConfigured: false });
     }
+  },
+
+  // Backward compatibility methods
+  get selectedMurfVoice() {
+    return get().selectedSarvamSpeaker;
+  },
+  get isMurfConfigured() {
+    return get().isSarvamConfigured;
+  },
+  setSelectedMurfVoice: (voiceId: string) => {
+    get().setSelectedSarvamSpeaker(voiceId);
+  },
+  checkMurfStatus: async () => {
+    await get().checkSarvamStatus();
   },
 
   speak: async (text: string, langCode: LanguageCode = 'en', messageId?: string) => {
@@ -97,16 +118,31 @@ export const useAudioStore = create<AudioState>((set, get) => ({
       .trim();
 
     const engine = get().ttsEngine;
-    const customMurfKey = localStorage.getItem('nebula_murf_key') || undefined;
+    const customSarvamKey = localStorage.getItem('nebula_sarvam_key') || localStorage.getItem('nebula_murf_key') || undefined;
 
-    // 1. Attempt Murf AI Synthesis if selected and either custom key or server key is configured
-    if (engine === 'murf' && (customMurfKey || get().isMurfConfigured)) {
+    // 1. Attempt Sarvam AI Synthesis if selected and either custom key or server key is configured
+    if (engine === 'sarvam' && (customSarvamKey || get().isSarvamConfigured)) {
       try {
+        const langMap: Record<string, string> = {
+          hi: 'hi-IN',
+          en: 'en-IN',
+          ta: 'ta-IN',
+          te: 'te-IN',
+          kn: 'kn-IN',
+          ml: 'ml-IN',
+          bn: 'bn-IN',
+          mr: 'mr-IN',
+          gu: 'gu-IN',
+          pa: 'pa-IN',
+          or: 'or-IN'
+        };
+        const targetLangCode = langMap[langCode] || 'hi-IN';
+
         const res = await api.tts.generate({
-          text: cleanText,
-          language: langCode,
-          voiceId: get().selectedMurfVoice,
-          customApiKey: customMurfKey
+          inputs: [cleanText],
+          target_language_code: targetLangCode,
+          speaker: get().selectedSarvamSpeaker,
+          customApiKey: customSarvamKey
         });
 
         if (res.audioUrl) {
@@ -123,7 +159,7 @@ export const useAudioStore = create<AudioState>((set, get) => ({
           };
 
           audio.onerror = (e) => {
-            console.warn('Murf audio playback error, falling back to browser synthesis:', e);
+            console.warn('Sarvam AI audio playback error, falling back to browser synthesis:', e);
             fallbackBrowserSpeech(cleanText, langCode, messageId, set);
           };
 
@@ -131,7 +167,7 @@ export const useAudioStore = create<AudioState>((set, get) => ({
           return;
         }
       } catch (err) {
-        console.warn('Murf AI request failed, falling back to browser TTS:', err);
+        console.warn('Sarvam AI request failed, falling back to browser TTS:', err);
       }
     }
 
@@ -174,7 +210,7 @@ function fallbackBrowserSpeech(
   window.speechSynthesis.cancel();
 
   const utterance = new SpeechSynthesisUtterance(cleanText);
-  activeUtterance = utterance; // Prevent garbage collection in Chrome
+  activeUtterance = utterance;
 
   const langOpt = SUPPORTED_LANGUAGES.find(l => l.code === langCode);
   const speechCode = langOpt?.speechCode || 'en-US';
@@ -182,13 +218,11 @@ function fallbackBrowserSpeech(
   utterance.rate = 1.0;
   utterance.pitch = 1.0;
 
-  // Find best available voice (prefer natural / neural / google / edge voices)
   const voices = cachedVoices.length > 0 ? cachedVoices : window.speechSynthesis.getVoices();
   if (voices.length > 0) {
     const langPrefix = speechCode.slice(0, 2).toLowerCase();
     const matchedVoices = voices.filter(v => v.lang.toLowerCase().startsWith(langPrefix));
     
-    // Prioritize natural or studio-grade voices
     const premiumVoice = matchedVoices.find(v => 
       v.name.includes('Natural') || 
       v.name.includes('Google') || 
@@ -226,7 +260,6 @@ function fallbackBrowserSpeech(
     }
   };
 
-  // Keep Chrome's speech synthesis from going to sleep on longer sentences
   if (resumeTimer) clearInterval(resumeTimer);
   resumeTimer = setInterval(() => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis.speaking) {

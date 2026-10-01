@@ -107,7 +107,7 @@ app.get('/api/health', (req, res) => {
     version: '1.0.0',
     db_engine: getActiveEngine(),
     gemini_configured: Boolean(process.env.GEMINI_API_KEY?.trim()),
-    murf_configured: Boolean(process.env.MURF_API_KEY?.trim())
+    sarvam_configured: Boolean(process.env.SARVAM_API_KEY?.trim() && process.env.SARVAM_API_KEY !== 'your_sarvam_api_key_here')
   });
 });
 

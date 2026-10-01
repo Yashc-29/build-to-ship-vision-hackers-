@@ -92,11 +92,11 @@ export const api = {
       })
   },
 
-  // Murf AI TTS
+  // Sarvam AI TTS
   tts: {
-    getVoices: () => request<{ murf_configured: boolean; voices: any[]; default_mappings: any }>('/tts/voices'),
-    generate: (body: { text: string; language?: string; voiceId?: string; customApiKey?: string }) =>
-      request<{ audioUrl: string | null; audioBase64: string | null; engine: string; voiceId: string; duration?: number; error?: string }>('/tts/generate', {
+    getVoices: () => request<{ sarvam_configured?: boolean; murf_configured?: boolean; speakers?: any[]; voices: any[]; default_mappings: any }>('/tts/voices'),
+    generate: (body: { text?: string; inputs?: string[]; target_language_code?: string; language?: string; speaker?: string; voiceId?: string; pitch?: number; pace?: number; customApiKey?: string }) =>
+      request<{ audioUrl: string | null; audioBase64: string | null; engine: string; speaker?: string; voiceId?: string; error?: string }>('/tts/generate', {
         method: 'POST',
         body: JSON.stringify(body)
       })
