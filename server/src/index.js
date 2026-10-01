@@ -31,6 +31,32 @@ if (fs.existsSync(path.join(rootDir, '.env'))) {
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+let isDbInitialized = false;
+let dbInitPromise = null;
+
+async function ensureDbInitialized() {
+  if (!isDbInitialized) {
+    if (!dbInitPromise) {
+      dbInitPromise = (async () => {
+        await initDatabase();
+        await runSeed();
+        isDbInitialized = true;
+      })();
+    }
+    await dbInitPromise;
+  }
+}
+
+// Ensure database is initialized before handling any API requests
+app.use(async (req, res, next) => {
+  try {
+    await ensureDbInitialized();
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
+
 // 1. Security & Core Middleware
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' }
@@ -46,7 +72,7 @@ const allowedOrigins = [
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps, curl, or server-to-server)
-    if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+    if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production' || process.env.VERCEL) {
       callback(null, true);
     } else {
       callback(new Error('Blocked by CORS security policy'));
@@ -91,9 +117,9 @@ app.use('/api/sessions', sessionRoutes);
 app.use('/api/tts', ttsRoutes);
 app.use('/api/admin', adminRoutes);
 
-// 4. Static Frontend Client Serving (Production / Unified Server)
+// 4. Static Frontend Client Serving (Production / Unified Local Server)
 const clientDistPath = path.join(rootDir, 'client', 'dist');
-if (fs.existsSync(clientDistPath)) {
+if (!process.env.VERCEL && fs.existsSync(clientDistPath)) {
   app.use(express.static(clientDistPath));
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api/')) {
@@ -106,12 +132,11 @@ if (fs.existsSync(clientDistPath)) {
 // 5. Global Error Handler
 app.use(errorHandler);
 
-// 5. Bootstrap Server
+// 6. Bootstrap Server (Local Standalone Server)
 async function startServer() {
   try {
     console.log('🚀 Initializing Nebula Voice Platform Server...');
-    await initDatabase();
-    await runSeed();
+    await ensureDbInitialized();
 
     app.listen(PORT, () => {
       console.log(`🌌 Nebula Voice Platform backend listening on http://localhost:${PORT}`);
@@ -124,6 +149,8 @@ async function startServer() {
   }
 }
 
-startServer();
+if (!process.env.VERCEL) {
+  startServer();
+}
 
 export default app;

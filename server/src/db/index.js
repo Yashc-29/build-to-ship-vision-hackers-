@@ -36,7 +36,7 @@ if (databaseUrl) {
 // Fallback SQLite initialization
 function getSqliteInstance() {
   if (!sqliteDb) {
-    const dbFilePath = path.join(rootDir, 'nebula.db');
+    const dbFilePath = process.env.VERCEL ? '/tmp/nebula.db' : path.join(rootDir, 'nebula.db');
     sqliteDb = new DatabaseSync(dbFilePath);
     sqliteDb.exec('PRAGMA foreign_keys = ON;');
     sqliteDb.exec('PRAGMA journal_mode = WAL;');
