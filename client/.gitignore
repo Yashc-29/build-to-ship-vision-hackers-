@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Production build output
+dist/
+dist-ssr/
+
+# Environment variables & secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+
+# TypeScript build info / cache
+*.tsbuildinfo
+
+# Logs & OS files
+*.log
+.DS_Store
+Thumbs.db

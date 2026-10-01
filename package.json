@@ -1,0 +1,30 @@
+{
+  "name": "nebula-voice",
+  "version": "1.0.0",
+  "description": "Nebula Voice - Enterprise AI-Powered Voice & Conversational Intelligence Platform",
+  "private": true,
+  "scripts": {
+    "dev": "node scripts/dev.js",
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "build": "npm --prefix server run build && npm --prefix client run build",
+    "start": "npm --prefix server start",
+    "seed": "npm --prefix server run seed",
+    "test:e2e": "node scripts/test-e2e.js",
+    "install:all": "npm install && npm --prefix server install && npm --prefix client install"
+  },
+  "keywords": [
+    "conversational-ai",
+    "voice-intelligence",
+    "speech-to-text",
+    "text-to-speech",
+    "gemini",
+    "omnichannel",
+    "channel-hopping",
+    "sentiment-trajectory",
+    "memory-buffer",
+    "enterprise-support"
+  ],
+  "author": "Nebula Voice Systems",
+  "license": "MIT"
+}
